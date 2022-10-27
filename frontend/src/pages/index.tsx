@@ -1,10 +1,12 @@
 import * as React from "react";
 import type { HeadFC } from "gatsby";
+import { SocketGui } from "../components/socket-gui";
 
 const IndexPage = () => {
   return (
     <main>
-      <h1>Hello World!</h1>
+      <h1>Encrypted Chat</h1>
+      <SocketGui />
     </main>
   );
 };
