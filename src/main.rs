@@ -1,4 +1,8 @@
-use actix_web::{HttpServer, App, web, Responder};
+use actix_web::{HttpServer, App, web, Responder, HttpRequest, HttpResponse, Error};
+use actix_web_actors::ws;
+use session::WsClientSession;
+
+mod session;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -9,6 +13,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .service(web::resource("/").to(index))
+            .route("/ws", web::get().to(client_session_route))
     })
     .bind(("127.0.0.1", PORT))?
     .run()
@@ -17,6 +22,16 @@ async fn main() -> std::io::Result<()> {
 
 async fn index() -> impl Responder {
     "Hello World!"
+}
+
+async fn client_session_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+    ws::start(
+        WsClientSession {
+            id: 0,
+        },
+        &req,
+        stream,
+    )
 }
 
 const PORT: u16 = 8000;
