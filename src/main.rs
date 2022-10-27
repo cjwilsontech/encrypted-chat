@@ -1,5 +1,7 @@
 use actix_files::{Files, NamedFile};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    middleware::Logger, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use actix_web_actors::ws;
 use session::WsClientSession;
 
@@ -17,6 +19,7 @@ async fn main() -> std::io::Result<()> {
             .route("/ws", web::get().to(client_session_route))
             .service(Files::new("/", "./frontend/public"))
             .default_service(web::to(not_found))
+            .wrap(Logger::default())
     })
     .bind(("127.0.0.1", PORT))?
     .run()
