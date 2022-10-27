@@ -1,6 +1,6 @@
-use actix::{Actor, ActorContext, StreamHandler};
+use actix::{Actor, ActorContext, AsyncContext, StreamHandler};
 use actix_web_actors::ws;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct WsClientSession {
     /// Unique ID for the session.
@@ -17,12 +17,26 @@ impl WsClientSession {
             hb: Instant::now(),
         }
     }
+
+    fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
+        ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+            if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+                println!("Socket timed out. (ID: {})", act.id);
+                ctx.stop();
+                return;
+            }
+
+            ctx.ping(b"");
+        });
+    }
 }
 
 impl Actor for WsClientSession {
     type Context = ws::WebsocketContext<Self>;
 
-    fn started(&mut self, _: &mut Self::Context) {}
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.hb(ctx);
+    }
 
     fn stopping(&mut self, _: &mut Self::Context) -> actix::Running {
         actix::Running::Stop
@@ -60,3 +74,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsClientSession {
         }
     }
 }
+
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
