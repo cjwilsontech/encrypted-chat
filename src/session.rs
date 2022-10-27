@@ -1,9 +1,22 @@
-use actix::{Actor, StreamHandler, ActorContext};
+use actix::{Actor, ActorContext, StreamHandler};
 use actix_web_actors::ws;
+use std::time::Instant;
 
 pub struct WsClientSession {
-	/// Unique ID for the session.
-	pub id: usize,
+    /// Unique ID for the session.
+    pub id: usize,
+
+    /// Instant of the last successful heartbeat.
+    pub hb: Instant,
+}
+
+impl WsClientSession {
+    pub fn new() -> WsClientSession {
+        WsClientSession {
+            id: 0,
+            hb: Instant::now(),
+        }
+    }
 }
 
 impl Actor for WsClientSession {
@@ -26,14 +39,24 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsClientSession {
             Ok(item) => item,
         };
 
-		match msg {
-			ws::Message::Text(_) => todo!(),
-			ws::Message::Binary(_) => todo!(),
-			ws::Message::Continuation(_) => todo!(),
-			ws::Message::Ping(_) => todo!(),
-			ws::Message::Pong(_) => todo!(),
-			ws::Message::Close(_) => todo!(),
-			ws::Message::Nop => todo!(),
-		}
+        match msg {
+            ws::Message::Text(text) => println!("Text recieved: {}", text),
+            ws::Message::Binary(_) => println!("Binary not supported."),
+            ws::Message::Continuation(_) => {
+                ctx.stop();
+            }
+            ws::Message::Ping(msg) => {
+                self.hb = Instant::now();
+                ctx.pong(&msg);
+            }
+            ws::Message::Pong(_) => {
+                self.hb = Instant::now();
+            }
+            ws::Message::Close(reason) => {
+                ctx.close(reason);
+                ctx.stop();
+            }
+            ws::Message::Nop => (),
+        }
     }
 }

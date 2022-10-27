@@ -1,4 +1,4 @@
-use actix_web::{HttpServer, App, web, Responder, HttpRequest, HttpResponse, Error};
+use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 use session::WsClientSession;
 
@@ -24,14 +24,11 @@ async fn index() -> impl Responder {
     "Hello World!"
 }
 
-async fn client_session_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    ws::start(
-        WsClientSession {
-            id: 0,
-        },
-        &req,
-        stream,
-    )
+async fn client_session_route(
+    req: HttpRequest,
+    stream: web::Payload,
+) -> Result<HttpResponse, Error> {
+    ws::start(WsClientSession::new(), &req, stream)
 }
 
 const PORT: u16 = 8000;
