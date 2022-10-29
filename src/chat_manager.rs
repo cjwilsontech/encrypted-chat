@@ -43,6 +43,18 @@ impl Handler<Disconnect> for ChatManager {
     }
 }
 
+impl Handler<ChatMessage> for ChatManager {
+    type Result = ();
+
+    fn handle(&mut self, msg: ChatMessage, _: &mut Context<Self>) {
+        for (id, session) in &self.sessions {
+            if *id != msg.client_id {
+                session.do_send(Message(msg.message.to_owned()));
+            }
+        }
+    }
+}
+
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Message(pub String);
@@ -57,4 +69,11 @@ pub struct Connect {
 #[rtype(result = "()")]
 pub struct Disconnect {
     pub client_id: usize,
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct ChatMessage {
+    pub client_id: usize,
+    pub message: String,
 }

@@ -2,7 +2,7 @@ use actix::prelude::*;
 use actix_web_actors::ws;
 use std::time::{Duration, Instant};
 
-use crate::chat_manager::{self, ChatManager};
+use crate::chat_manager::{self, ChatManager, ChatMessage};
 
 pub struct WsClientSession {
     /// Unique ID for the session.
@@ -87,7 +87,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsClientSession {
         };
 
         match msg {
-            ws::Message::Text(text) => println!("Text recieved: {}", text),
+            ws::Message::Text(text) => {
+                self.chat_manager.do_send(ChatMessage {
+                    client_id: self.id,
+                    message: text.to_string(),
+                });
+            }
             ws::Message::Binary(_) => println!("Binary not supported."),
             ws::Message::Continuation(_) => {
                 ctx.stop();
