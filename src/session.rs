@@ -68,11 +68,11 @@ impl Actor for WsClientSession {
     }
 }
 
-impl Handler<chat_manager::Message> for WsClientSession {
+impl Handler<chat_manager::ChatMessage> for WsClientSession {
     type Result = ();
 
-    fn handle(&mut self, msg: chat_manager::Message, ctx: &mut Self::Context) {
-        ctx.text(msg.0);
+    fn handle(&mut self, msg: chat_manager::ChatMessage, ctx: &mut Self::Context) {
+        ctx.text(serde_json::to_string(&msg).unwrap());
     }
 }
 

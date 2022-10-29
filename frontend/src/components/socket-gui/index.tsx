@@ -3,6 +3,11 @@ import { IChatMessage } from "../chat-message";
 import { ChatBox } from "../chatbox";
 import * as styles from "./index.module.scss";
 
+interface IChatMessageDto {
+  client_id: number;
+  message: string;
+}
+
 export function SocketGui() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [message, setMessage] = useState("");
@@ -30,7 +35,14 @@ export function SocketGui() {
     newSocket.onmessage = (e) => {
       switch (e.type) {
         case "message":
-          handleChatMessageRecieved({ text: e.data, timestamp: new Date() });
+          {
+            const messageDto: IChatMessageDto = JSON.parse(e.data);
+            handleChatMessageRecieved({
+              client_id: messageDto.client_id,
+              text: messageDto.message,
+              timestamp: new Date(),
+            });
+          }
           break;
         default:
           console.error(`Unknown message type: ${e.type}`);
@@ -50,7 +62,7 @@ export function SocketGui() {
       socket?.send(message);
       setChatLog((chats) => [
         ...chats,
-        { text: message, timestamp: new Date() },
+        { client_id: -1, text: message, timestamp: new Date() },
       ]);
       setMessage("");
     }

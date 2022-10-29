@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
 use actix::prelude::*;
 use rand::{self, rngs::ThreadRng, Rng};
+use serde::Serialize;
+use std::collections::HashMap;
 
 pub struct ChatManager {
-    sessions: HashMap<usize, Recipient<Message>>,
+    sessions: HashMap<usize, Recipient<ChatMessage>>,
     rng: ThreadRng,
 }
 
@@ -49,20 +49,16 @@ impl Handler<ChatMessage> for ChatManager {
     fn handle(&mut self, msg: ChatMessage, _: &mut Context<Self>) {
         for (id, session) in &self.sessions {
             if *id != msg.client_id {
-                session.do_send(Message(msg.message.to_owned()));
+                session.do_send(msg.clone());
             }
         }
     }
 }
 
 #[derive(Message)]
-#[rtype(result = "()")]
-pub struct Message(pub String);
-
-#[derive(Message)]
 #[rtype(usize)]
 pub struct Connect {
-    pub client_addr: Recipient<Message>,
+    pub client_addr: Recipient<ChatMessage>,
 }
 
 #[derive(Message)]
@@ -71,7 +67,7 @@ pub struct Disconnect {
     pub client_id: usize,
 }
 
-#[derive(Message)]
+#[derive(Clone, Message, Serialize)]
 #[rtype(result = "()")]
 pub struct ChatMessage {
     pub client_id: usize,

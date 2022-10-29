@@ -2,6 +2,7 @@ import React from "react";
 import * as styles from "./index.module.scss";
 
 export interface IChatMessage {
+  client_id: number;
   text: string;
   timestamp: Date;
 }
