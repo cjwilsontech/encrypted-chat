@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 
+interface IChatMessageRecievedDto {
+  text: string;
+  timestamp: Date;
+}
+
 export function SocketGui() {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [message, setMessage] = useState("");
@@ -23,7 +28,21 @@ export function SocketGui() {
       setSocket(null);
     };
 
+    newSocket.onmessage = (e) => {
+      switch (e.type) {
+        case "message":
+          handleChatMessageRecieved({ text: e.data, timestamp: new Date() });
+          break;
+        default:
+          console.error(`Unknown message type: ${e.type}`);
+      }
+    };
+
     setSocket(newSocket);
+  };
+
+  const handleChatMessageRecieved = (chat: IChatMessageRecievedDto) => {
+    console.log(`[${chat.timestamp.toLocaleTimeString()}] ${chat.text}`);
   };
 
   useEffect(() => {
