@@ -1,0 +1,19 @@
+.chatLog {
+  flex-grow: 1;
+  width: 100%;
+}
+
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.inputControls {
+  display: flex;
+  gap: 16px;
+
+  input {
+    flex-grow: 1;
+  }
+}

@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "classnames": "^2.3.2",
     "gatsby": "^4.24.5",
     "gatsby-plugin-sass": "^5.24.0",
     "react": "^18.1.0",
@@ -26,6 +27,7 @@
     "@types/node": "^17.0.45",
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
+    "gatsby-plugin-dts-css-modules": "^3.0.0",
     "typescript": "^4.8.3"
   }
 }
