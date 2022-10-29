@@ -3,8 +3,14 @@ use rand::{self, rngs::ThreadRng, Rng};
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::session::WsClientSession;
+
+struct SessionData {
+    client_addr: Addr<WsClientSession>,
+}
+
 pub struct ChatManager {
-    sessions: HashMap<usize, Recipient<ChatMessage>>,
+    sessions: HashMap<usize, SessionData>,
     rng: ThreadRng,
 }
 
@@ -29,7 +35,12 @@ impl Handler<Connect> for ChatManager {
 
         println!("Joined (ID: {})", client_id);
 
-        self.sessions.insert(client_id, msg.client_addr);
+        self.sessions.insert(
+            client_id,
+            SessionData {
+                client_addr: msg.client_addr,
+            },
+        );
         client_id
     }
 }
@@ -49,7 +60,7 @@ impl Handler<ChatMessage> for ChatManager {
     fn handle(&mut self, msg: ChatMessage, _: &mut Context<Self>) {
         for (id, session) in &self.sessions {
             if *id != msg.client_id {
-                session.do_send(msg.clone());
+                session.client_addr.do_send(msg.clone());
             }
         }
     }
@@ -58,7 +69,7 @@ impl Handler<ChatMessage> for ChatManager {
 #[derive(Message)]
 #[rtype(usize)]
 pub struct Connect {
-    pub client_addr: Recipient<ChatMessage>,
+    pub client_addr: Addr<WsClientSession>,
 }
 
 #[derive(Message)]

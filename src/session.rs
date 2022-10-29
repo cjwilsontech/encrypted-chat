@@ -45,10 +45,9 @@ impl Actor for WsClientSession {
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
 
-        let addr = ctx.address();
         self.chat_manager
             .send(chat_manager::Connect {
-                client_addr: addr.recipient(),
+                client_addr: ctx.address(),
             })
             .into_actor(self)
             .then(|res, act, ctx| {
