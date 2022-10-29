@@ -1,6 +1,8 @@
-use actix::{Actor, ActorContext, AsyncContext, StreamHandler};
+use actix::prelude::*;
 use actix_web_actors::ws;
 use std::time::{Duration, Instant};
+
+use crate::chat_manager::{self, ChatManager};
 
 pub struct WsClientSession {
     /// Unique ID for the session.
@@ -8,13 +10,17 @@ pub struct WsClientSession {
 
     /// Instant of the last successful heartbeat.
     pub hb: Instant,
+
+    /// ChatManager actor address.
+    pub chat_manager: Addr<ChatManager>,
 }
 
 impl WsClientSession {
-    pub fn new() -> WsClientSession {
+    pub fn new(chat_manager_addr: Addr<ChatManager>) -> WsClientSession {
         WsClientSession {
             id: 0,
             hb: Instant::now(),
+            chat_manager: chat_manager_addr,
         }
     }
 
@@ -22,6 +28,8 @@ impl WsClientSession {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
             if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
                 println!("Socket timed out. (ID: {})", act.id);
+                act.chat_manager
+                    .do_send(chat_manager::Disconnect { client_id: act.id });
                 ctx.stop();
                 return;
             }
@@ -36,10 +44,35 @@ impl Actor for WsClientSession {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
+
+        let addr = ctx.address();
+        self.chat_manager
+            .send(chat_manager::Connect {
+                client_addr: addr.recipient(),
+            })
+            .into_actor(self)
+            .then(|res, act, ctx| {
+                match res {
+                    Ok(res) => act.id = res,
+                    Err(_) => ctx.stop(),
+                }
+                fut::ready(())
+            })
+            .wait(ctx);
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> actix::Running {
+        self.chat_manager
+            .do_send(chat_manager::Disconnect { client_id: self.id });
         actix::Running::Stop
+    }
+}
+
+impl Handler<chat_manager::Message> for WsClientSession {
+    type Result = ();
+
+    fn handle(&mut self, msg: chat_manager::Message, ctx: &mut Self::Context) {
+        ctx.text(msg.0);
     }
 }
 

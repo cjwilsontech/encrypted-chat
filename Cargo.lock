@@ -498,6 +498,7 @@ dependencies = [
  "actix-web-actors",
  "env_logger",
  "log",
+ "rand",
 ]
 
 [[package]]

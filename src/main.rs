@@ -1,10 +1,13 @@
+use actix::{Actor, Addr};
 use actix_files::{Files, NamedFile};
 use actix_web::{
     middleware::Logger, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use actix_web_actors::ws;
+use chat_manager::ChatManager;
 use session::WsClientSession;
 
+mod chat_manager;
 mod session;
 
 #[actix_web::main]
@@ -13,8 +16,11 @@ async fn main() -> std::io::Result<()> {
 
     log::info!("Server running at http://localhost:{}/", PORT);
 
+    let chat_manager = ChatManager::new().start();
+
     HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(chat_manager.clone()))
             .service(web::resource("/").to(index))
             .route("/ws", web::get().to(client_session_route))
             .service(Files::new("/", "./frontend/public"))
@@ -41,8 +47,13 @@ async fn not_found() -> impl Responder {
 async fn client_session_route(
     req: HttpRequest,
     stream: web::Payload,
+    chat_manager: web::Data<Addr<ChatManager>>,
 ) -> Result<HttpResponse, Error> {
-    ws::start(WsClientSession::new(), &req, stream)
+    ws::start(
+        WsClientSession::new(chat_manager.get_ref().clone()),
+        &req,
+        stream,
+    )
 }
 
 const PORT: u16 = 8000;
